@@ -16,9 +16,8 @@ use toubeelib\core\repositoryInterfaces\RdvRepositoryInterface;
 use toubeelib\core\repositoryInterfaces\RepositoryEntityNotFoundException;
 use toubeelib\core\services\rdv\ServiceRendezVousNotDataFoundException;
 
-use Monolog\Logger; // Use the correct namespace for Logger
-use Monolog\Handler\StreamHandler; // Use the correct namespace for StreamHandler
-use Monolog\Handler\FirePHPHandler; // Use the correct namespace for FirePHPHandler
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 
 class ServiceRendezVous implements ServiceRendezVousInterface
@@ -124,10 +123,6 @@ class ServiceRendezVous implements ServiceRendezVousInterface
     
         return $retour;
     }
-    
-    
-
-    
     
 
 
