@@ -33,7 +33,7 @@ class ArrayRdvRepository implements RdvRepositoryInterface
         throw new RepositoryEntityNotFoundException("Rendezvous $id not found");
 
         return $rdv;
-        
+
     }
 
     public function getRendezvousByPraticienId(string $id_prat): array {

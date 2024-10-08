@@ -101,6 +101,32 @@ class ServiceRendezVous implements ServiceRendezVousInterface
 
         return $retour;
     }
+
+
+    public function planningPraticien(string $id_prat, string $date_deb, string $date_fin) : array {
+
+        $deb_day = new DateTimeImmutable($date_deb);
+        $fin_day = new DateTimeImmutable($date_fin);
+    
+        $retour = [];
+    
+        $liste_rdvs = $this->rendezvousRepository->getRendezvousByPraticienId($id_prat);
+    
+        foreach ($liste_rdvs as $rdv) {
+
+            if ($rdv->date >= $deb_day && $rdv->date <= $fin_day) {
+                $retour[] = [
+                    'date' => $rdv->date->format('Y-m-d H:i:s'),
+                    'specialite' => $this->praticienRepository->getSpecialiteById($rdv->specialite),
+                ];
+            }
+        }
+    
+        return $retour;
+    }
+    
+    
+
     
     
 
