@@ -16,5 +16,6 @@ cache.properties
 # Composer
 composer.phar
 composer.lock
-
+/gateway/logs/*
+/gateway/vendor
 *.env
