@@ -1,8 +1,9 @@
 <?php
+
 namespace gateway\application\actions;
 
 use GuzzleHttp\Exception\ClientException;
-use Psr\Http\Client\ClientInterface;
+use GuzzleHttp\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpNotFoundException;
@@ -16,18 +17,33 @@ class GatewayGetPraticienByIdAction extends AbstractAction
     }
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface {
-        $id = $args['id'];
+        $id = $args['id'] ?? null;
         if (empty($id)) {
             $response->getBody()->write(json_encode(['error' => "L'ID du praticien est requis."]));
             return $response->withHeader('Content-Type', 'application/json')
                 ->withStatus(400);
         }
+
         try {
             $queryParams = $request->getQueryParams();
-            $response = $this->toubeelibClient->get("praticiens/$id",['query' => $queryParams]);
+            $apiResponse = $this->toubeelibClient->get("praticiens/$id", [
+                'query' => !empty($queryParams) ? $queryParams : []
+            ]);
+
+            // Retourner la réponse du backend
+            $response->getBody()->write($apiResponse->getBody()->getContents());
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus($apiResponse->getStatusCode());
         } catch (ClientException $e) {
-            throw new HttpNotFoundException($request, $e->getMessage());
+            // Gestion des erreurs 4xx ou 5xx du backend
+            $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus($e->getResponse()->getStatusCode());
+        } catch (\Exception $e) {
+            // Gestion des erreurs internes
+            $response->getBody()->write(json_encode(['error' => 'Erreur interne du serveur']));
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
         }
-        return $response;
     }
 }
