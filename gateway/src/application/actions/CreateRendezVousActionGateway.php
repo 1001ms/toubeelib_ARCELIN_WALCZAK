@@ -1,4 +1,5 @@
 <?php
+
 namespace gateway\application\actions;
 
 use GuzzleHttp\Exception\ClientException;
@@ -17,10 +18,38 @@ class CreateRendezVousActionGateway extends AbstractAction
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface {
         try {
-            $response = $this->toubeelibClient->post("rdvs",['json'=>$request->getParsedBody()]);
+            $parsedBody = $request->getParsedBody();
+            if (empty($parsedBody) || !is_array($parsedBody)) {
+                $response->getBody()->write(json_encode(['error' => "Le corps de la requête est vide ou mal formaté."]));
+                return $response->withHeader('Content-Type', 'application/json')
+                    ->withStatus(400);
+            }
+            $requiredFields = ['praticien', 'patient', 'specialite', 'date'];
+            foreach ($requiredFields as $field) {
+                if (empty($parsedBody[$field])) {
+                    $response->getBody()->write(json_encode(['error' => "Le champ '$field' est requis."]));
+                    return $response->withHeader('Content-Type', 'application/json')
+                        ->withStatus(400);
+                }
+            }
+
+            // Envoi de la requête POST vers le backend
+            $apiResponse = $this->toubeelibClient->post("rdvs", ['json' => $parsedBody]);
+
+            // Retourner la réponse du backend
+            $response->getBody()->write($apiResponse->getBody()->getContents());
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus($apiResponse->getStatusCode());
         } catch (ClientException $e) {
-            throw new HttpNotFoundException($request, $e->getMessage());
+            // Gestion des erreurs 4xx ou 5xx du backend
+            $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus($e->getResponse()->getStatusCode());
+        } catch (\Exception $e) {
+            // Gestion des erreurs internes
+            $response->getBody()->write(json_encode(['error' => 'Erreur interne du serveur']));
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
         }
-        return $response;
     }
 }

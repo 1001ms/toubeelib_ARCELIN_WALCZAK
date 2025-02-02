@@ -18,11 +18,13 @@ class DeleteRendezVousActionGateway extends AbstractAction
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface {
         $id = $args['id'] ?? null;
+
         if (empty($id)) {
             $response->getBody()->write(json_encode(['error' => "L'ID du rendez-vous est requis."]));
             return $response->withHeader('Content-Type', 'application/json')
                 ->withStatus(400);
         }
+
         try {
             $parsedBody = $request->getParsedBody();
             if (!isset($parsedBody['annulerPar']) || !is_string($parsedBody['annulerPar'])) {
@@ -30,10 +32,22 @@ class DeleteRendezVousActionGateway extends AbstractAction
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(400);
             }
-            $response = $this->toubeelibClient->delete("rdvs/$id",['json'=>$request->getParsedBody()]);
+            $apiResponse = $this->toubeelibClient->delete("rdvs/$id", ['json' => $parsedBody]);
+
+            // Retourner la réponse du backend
+            $response->getBody()->write($apiResponse->getBody()->getContents());
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus($apiResponse->getStatusCode());
         } catch (ClientException $e) {
-            throw new HttpNotFoundException($request, $e->getMessage());
+            // Gestion des erreurs 4xx ou 5xx du backend
+            $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus($e->getResponse()->getStatusCode());
+        } catch (\Exception $e) {
+            // Gestion des erreurs génériques
+            $response->getBody()->write(json_encode(['error' => 'Erreur interne du serveur']));
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
         }
-        return $response;
     }
 }
